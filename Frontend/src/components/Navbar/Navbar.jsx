@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { FiChevronDown, FiMenu, FiX, FiArrowRight } from 'react-icons/fi';
@@ -70,16 +70,32 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
   
   const location = useLocation();
   const activeItem = navLinks.find(link => link.href === location.pathname)?.name || 'Home';
+  const transparentPages = ['/', '/about'];
+  const isTransparentPage = transparentPages.includes(location.pathname);
+  const isTransparent = isTransparentPage && !scrolled;
 
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const currentScrollY = window.scrollY;
+      
+      setScrolled(currentScrollY > 20);
+
+      if (currentScrollY > lastScrollY.current && currentScrollY > 80) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
+
+      lastScrollY.current = currentScrollY;
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -95,34 +111,36 @@ const Navbar = () => {
     <>
       <motion.nav
         initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed top-4 left-0 right-0 z-50 mx-auto w-full max-w-[1400px] px-4 transition-all duration-300 ${
-          scrolled ? 'top-2' : 'top-6'
+        animate={{ y: hidden ? -150 : 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+          scrolled ? 'bg-white/90 border-b border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl' : 'bg-transparent border-transparent shadow-none backdrop-blur-none'
         }`}
       >
         <div 
-          className={`relative flex h-[80px] w-full items-center justify-between rounded-[50px] border border-white/20 px-6 backdrop-blur-xl md:px-8 transition-all duration-300 ${
-            scrolled ? 'bg-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.08)]' : 'bg-white/70 shadow-sm'
-          }`}
+          className="relative flex h-[80px] w-full max-w-[1400px] mx-auto items-center justify-between px-6 md:px-8 transition-all duration-300"
           onMouseLeave={handleMouseLeave}
         >
           {/* Logo */}
-          <div className="flex shrink-0 items-center cursor-pointer group hover:scale-[1.02] transition-transform duration-300">
+          <Link 
+            to="/"
+            onClick={() => window.scrollTo(0, 0)}
+            className="flex shrink-0 items-center cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
+          >
             <img 
               src="/quantromind.png" 
               alt="Quantromind Logo" 
               className="h-9 md:h-10 w-auto mr-2.5 object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(79,107,255,0.4)]" 
             />
             <div className="flex flex-col">
-              <span className="text-base md:text-lg font-bold tracking-tight text-gray-900 leading-none">
+              <span className={`text-base md:text-lg font-bold tracking-tight leading-none ${isTransparent ? 'text-white' : 'text-gray-900'}`}>
                 QUANTROMIND
               </span>
-              <span className="text-[9px] md:text-[10px] font-semibold tracking-widest text-[#4F6BFF] uppercase mt-0.5">
+              <span className={`text-[9px] md:text-[10px] font-semibold tracking-widest uppercase mt-0.5 ${isTransparent ? 'text-white/80' : 'text-[#4F6BFF]'}`}>
                 Private Limited
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex flex-1 items-center justify-center space-x-1">
@@ -134,17 +152,20 @@ const Navbar = () => {
               >
                 <Link
                   to={link.href}
+                  onClick={() => window.scrollTo(0, 0)}
                   className={`group flex items-center gap-1 rounded-full px-4 py-2 text-[15px] font-[500] transition-colors duration-200 ${
                     activeItem === link.name || activeDropdown === link.name
-                      ? 'text-[#4F6BFF]'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50/50'
+                      ? (isTransparent ? 'text-white' : 'text-[#4F6BFF]')
+                      : (isTransparent ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50/50')
                   }`}
                 >
                   {link.name}
                   {link.hasDropdown && (
                     <FiChevronDown 
                       className={`transition-transform duration-300 ${
-                        activeDropdown === link.name ? 'rotate-180 text-[#4F6BFF]' : 'text-gray-400 group-hover:text-gray-600'
+                        activeDropdown === link.name 
+                          ? (isTransparent ? 'rotate-180 text-white' : 'rotate-180 text-[#4F6BFF]') 
+                          : (isTransparent ? 'text-white/60 group-hover:text-white' : 'text-gray-400 group-hover:text-gray-600')
                       }`} 
                     />
                   )}
@@ -153,7 +174,7 @@ const Navbar = () => {
                   {activeItem === link.name && (
                     <motion.div
                       layoutId="activeUnderline"
-                      className="absolute bottom-1 left-4 right-4 h-[2px] rounded-full bg-[#4F6BFF]"
+                      className={`absolute bottom-1 left-4 right-4 h-[2px] rounded-full ${isTransparent ? 'bg-white' : 'bg-[#4F6BFF]'}`}
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
@@ -179,7 +200,11 @@ const Navbar = () => {
           <div className="lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                isTransparent 
+                  ? 'bg-white/10 text-white hover:bg-white/20' 
+                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
             >
               {mobileMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
             </button>
@@ -291,7 +316,10 @@ const Navbar = () => {
                   <div key={link.name}>
                     <Link
                       to={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        window.scrollTo(0, 0);
+                      }}
                       className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-blue-50 hover:text-[#4F6BFF]"
                     >
                       {link.name}

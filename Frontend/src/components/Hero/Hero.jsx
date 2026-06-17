@@ -9,13 +9,14 @@ const Hero = () => {
       {/* ═══════════════════════════════════════════════════════════════
           FULLSCREEN BACKGROUND VIDEO
       ═══════════════════════════════════════════════════════════════ */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-[#070b18]">
         <video
           src="/robot.mp4"
           autoPlay
           muted
           loop
           playsInline
+          preload="auto"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
         {/* Lighter overlay — video clearly visible, text still readable */}
